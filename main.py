@@ -28,11 +28,10 @@ def webhook():
         else:
             bot.sendMessage(chat_id=chat_id, text=f"You said: {text}")
     elif update.message.photo:
-        # Process received photo
         file = bot.getFile(update.message.photo[-1].file_id)
         image_bytes = file.download_as_bytearray()
         img_type = get_image_type(image_bytes)
-        bot.sendMessage(chat_id=chat_id, text=f"Received image of type: {img_type}")
+        bot.sendMessage(chat_id=chat_id, text=f"Received image with type: {img_type}")
     else:
         bot.sendMessage(chat_id=chat_id, text="Unsupported message type")
 
