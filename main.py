@@ -1,28 +1,37 @@
 import os
 from fastapi import FastAPI, Request
-from telegram import Update, Bot
-from telegram.ext import Application, ApplicationBuilder, ContextTypes
+from telegram import Bot, Update
+from PIL import Image
+import io
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "your_bot_token_here")
+TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=TOKEN)
 
 app = FastAPI()
-bot = Bot(token=BOT_TOKEN)
 
-# Set up Telegram application (not used directly here but needed for webhook)
-application = ApplicationBuilder().token(BOT_TOKEN).build()
+def get_image_type(image_bytes):
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        return img.format.lower()
+    except:
+        return None
 
 @app.post("/webhook")
 async def handle_webhook(req: Request):
-    json_data = await req.json()
-    update = Update.de_json(json_data, bot)
+    data = await req.json()
+    update = Update.de_json(data, bot)
+    chat_id = update.message.chat.id if update.message else None
 
     if update.message:
-        chat_id = update.message.chat_id
-        text = update.message.text
-
-        if text == "/start":
-            await bot.send_message(chat_id=chat_id, text="Welcome to VMP Bot – Cleans spaces, Happy Faces!")
-        else:
-            await bot.send_message(chat_id=chat_id, text=f"You said: {text}")
-
-    return {"status": "ok"}
+        if update.message.text:
+            text = update.message.text
+            if text == "/start":
+                await bot.send_message(chat_id, "Welcome to VMP Bot – Cleans spaces, Happy Faces!")
+            else:
+                await bot.send_message(chat_id, f"You said: {text}")
+        elif update.message.photo:
+            file = await bot.get_file(update.message.photo[-1].file_id)
+            content = await file.download_as_bytearray()
+            img_type = get_image_type(content)
+            await bot.send_message(chat_id, f"Received image type: {img_type}")
+    return {"ok": True}
