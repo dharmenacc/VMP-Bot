@@ -1,38 +1,28 @@
-from flask import Flask, request
-import telegram
 import os
-from PIL import Image
-import io
+from fastapi import FastAPI, Request
+from telegram import Update, Bot
+from telegram.ext import Application, ApplicationBuilder, ContextTypes
 
-TOKEN = os.getenv("BOT_TOKEN")
-bot = telegram.Bot(token=TOKEN)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "your_bot_token_here")
 
-app = Flask(__name__)
+app = FastAPI()
+bot = Bot(token=BOT_TOKEN)
 
-def get_image_type(image_bytes):
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        return img.format.lower()
-    except Exception:
-        return None
+# Set up Telegram application (not used directly here but needed for webhook)
+application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
-    chat_id = update.message.chat.id
+@app.post("/webhook")
+async def handle_webhook(req: Request):
+    json_data = await req.json()
+    update = Update.de_json(json_data, bot)
 
-    if update.message.text:
+    if update.message:
+        chat_id = update.message.chat_id
         text = update.message.text
-        if text == "/start":
-            bot.send_message(chat_id=chat_id, text="Welcome to VMP Bot – Cleans spaces, Happy Faces!")
-        else:
-            bot.send_message(chat_id=chat_id, text=f"You said: {text}")
-    elif update.message.photo:
-        file = bot.get_file(update.message.photo[-1].file_id)
-        image_bytes = file.download_as_bytearray()
-        img_type = get_image_type(image_bytes)
-        bot.send_message(chat_id=chat_id, text=f"Received image with type: {img_type}")
-    else:
-        bot.send_message(chat_id=chat_id, text="Unsupported message type")
 
-    return "ok"
+        if text == "/start":
+            await bot.send_message(chat_id=chat_id, text="Welcome to VMP Bot – Cleans spaces, Happy Faces!")
+        else:
+            await bot.send_message(chat_id=chat_id, text=f"You said: {text}")
+
+    return {"status": "ok"}
