@@ -4,7 +4,7 @@ import os
 from PIL import Image
 import io
 
-TOKEN = os.getenv("BOT_TOKEN", "your_bot_token_here")
+TOKEN = os.getenv("BOT_TOKEN")
 bot = telegram.Bot(token=TOKEN)
 
 app = Flask(__name__)
@@ -24,15 +24,15 @@ def webhook():
     if update.message.text:
         text = update.message.text
         if text == "/start":
-            bot.sendMessage(chat_id=chat_id, text="Welcome to VMP Bot – Cleans spaces, Happy Faces!")
+            bot.send_message(chat_id=chat_id, text="Welcome to VMP Bot – Cleans spaces, Happy Faces!")
         else:
-            bot.sendMessage(chat_id=chat_id, text=f"You said: {text}")
+            bot.send_message(chat_id=chat_id, text=f"You said: {text}")
     elif update.message.photo:
-        file = bot.getFile(update.message.photo[-1].file_id)
+        file = bot.get_file(update.message.photo[-1].file_id)
         image_bytes = file.download_as_bytearray()
         img_type = get_image_type(image_bytes)
-        bot.sendMessage(chat_id=chat_id, text=f"Received image with type: {img_type}")
+        bot.send_message(chat_id=chat_id, text=f"Received image with type: {img_type}")
     else:
-        bot.sendMessage(chat_id=chat_id, text="Unsupported message type")
+        bot.send_message(chat_id=chat_id, text="Unsupported message type")
 
     return "ok"
